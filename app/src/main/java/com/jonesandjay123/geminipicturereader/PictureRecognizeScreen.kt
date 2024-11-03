@@ -1,3 +1,4 @@
+// PictureRecognizeScreen.kt
 package com.jonesandjay123.geminipicturereader
 
 import android.graphics.BitmapFactory
@@ -45,6 +46,8 @@ fun PictureRecognizeScreen(
             val inputStream = context.contentResolver.openInputStream(it)
             val bitmap = BitmapFactory.decodeStream(inputStream)
             imageBitmap = bitmap?.asImageBitmap()
+            // 重置 UI 狀態當選擇新圖片
+            viewModel.resetUiState()
         }
     }
 
@@ -88,7 +91,7 @@ fun PictureRecognizeScreen(
     LaunchedEffect(language) {
         tts.language = when (language) {
             "EN" -> Locale.ENGLISH
-            "中文" -> Locale.CHINESE
+            "中文" -> Locale.TRADITIONAL_CHINESE // 使用繁體中文
             else -> Locale.ENGLISH
         }
     }
@@ -103,6 +106,21 @@ fun PictureRecognizeScreen(
 
     // 觀察 ViewModel 的 UI 狀態
     val uiState by viewModel.uiState.collectAsState()
+
+    // 自動觸發 TTS 播放當 uiState 為 Success
+    LaunchedEffect(uiState) {
+        if (uiState is UiState.Success && !isPlaying) {
+            val textToSpeak = (uiState as UiState.Success).outputText
+            val utteranceId = UUID.randomUUID().toString()
+            tts.speak(
+                textToSpeak,
+                TextToSpeech.QUEUE_FLUSH,
+                null,
+                utteranceId
+            )
+            isPlaying = true
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -206,9 +224,15 @@ fun PictureRecognizeScreen(
                 ) {
                     Button(
                         onClick = {
+                            // 根據語言設置 prompt
+                            val prompt = when (language) {
+                                "EN" -> "Describe this image"
+                                "中文" -> "請用繁體中文描述圖片中的內容"
+                                else -> "Describe this image"
+                            }
                             // 觸發圖片識別邏輯
                             val bitmap = BitmapFactory.decodeStream(context.contentResolver.openInputStream(imageUri!!))
-                            viewModel.recognizeImage(bitmap)
+                            viewModel.recognizeImage(bitmap, prompt)
                         },
                         enabled = uiState !is UiState.Loading
                     ) {

@@ -1,3 +1,4 @@
+// PictureRecognizeViewModel.kt
 package com.jonesandjay123.geminipicturereader
 
 import android.graphics.Bitmap
@@ -20,7 +21,7 @@ class PictureRecognizeViewModel : ViewModel() {
         apiKey = BuildConfig.apiKey // 確保在 build.gradle 中配置了 apiKey
     )
 
-    fun recognizeImage(bitmap: Bitmap) {
+    fun recognizeImage(bitmap: Bitmap, prompt: String) {
         _uiState.value = UiState.Loading
 
         viewModelScope.launch(Dispatchers.IO) {
@@ -28,7 +29,7 @@ class PictureRecognizeViewModel : ViewModel() {
                 val response = generativeModel.generateContent(
                     content {
                         image(bitmap)
-                        text("Describe this image")
+                        text(prompt)
                     }
                 )
                 response.text?.let { outputContent ->
