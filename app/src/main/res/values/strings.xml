@@ -13,10 +13,11 @@
     <string name="title">Picture Recognize</string>
     <string name="language_label">Language</string>
     <string name="image_selection_placeholder">Image Selection Placeholder</string>
-    <string name="image_remove_button">Remove Image</string>
+    <string name="image_remove_button">Remove</string>
     <string name="input_field_placeholder">Input Field Placeholder</string>
-    <string name="button_placeholder">Button Placeholder</string>
+    <string name="recognition_button">AI Recognition</string>
     <string name="result_placeholder">Result Placeholder</string>
+    <string name="output_sentence">This is a sample message used for testing the Text-to-Speech functionality.</string>
     <string name="en">EN</string>
     <string name="zh">中文</string>
 </resources>

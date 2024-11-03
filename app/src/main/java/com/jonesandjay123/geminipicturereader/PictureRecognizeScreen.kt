@@ -15,6 +15,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.rounded.Clear
 
 @Composable
 fun PictureRecognizeScreen() {
@@ -22,6 +25,7 @@ fun PictureRecognizeScreen() {
     var expanded by remember { mutableStateOf(false) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var imageBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+    var isPlaying by remember { mutableStateOf(false) } // 控制播放/停止狀態
     val context = LocalContext.current
     val stringResources = StringResources(context)
 
@@ -106,6 +110,7 @@ fun PictureRecognizeScreen() {
                 onClick = {
                     imageUri = null
                     imageBitmap = null
+                    isPlaying = false // 清除圖片時停止播放狀態
                 },
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
@@ -115,34 +120,48 @@ fun PictureRecognizeScreen() {
             }
         }
 
-        // Row 模擬（暫時只放置簡單的文字）
-        Row(
-            modifier = Modifier
-                .padding(all = 16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResources.getString(R.string.input_field_placeholder, language),
+        // 結果顯示區域（當圖片顯示時才顯示）
+        if (imageBitmap != null) {
+            Column(
                 modifier = Modifier
-                    .weight(0.8f)
-                    .padding(end = 16.dp)
-            )
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .align(Alignment.CenterHorizontally),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
 
-            Text(
-                text = stringResources.getString(R.string.button_placeholder, language),
-                modifier = Modifier.align(Alignment.CenterVertically)
-            )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = { /* 觸發 AI 辨識邏輯 */ },
+                    ) {
+                        Text(text = stringResources.getString(R.string.recognition_button, language))
+                    }
+
+                    IconButton(
+                        onClick = {
+                            isPlaying = !isPlaying // 切換播放狀態
+                            // 未來此處可加入 TTS 播放或停止的邏輯
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (isPlaying) Icons.Rounded.Clear else Icons.Filled.PlayArrow,
+                            contentDescription = if (isPlaying) "Stop Audio" else "Play Audio"
+                        )
+                    }
+                }
+
+                Text(
+                    text = stringResources.getString(R.string.output_sentence, language),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(8.dp)
+                )
+            }
         }
-
-        // 結果顯示區域
-        Text(
-            text = stringResources.getString(R.string.result_placeholder, language),
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(16.dp)
-                .fillMaxSize()
-        )
     }
 }
