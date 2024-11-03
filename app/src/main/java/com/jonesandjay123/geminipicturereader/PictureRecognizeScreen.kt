@@ -10,6 +10,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,13 +22,13 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.rounded.Clear
+import androidx.lifecycle.viewmodel.compose.viewModel
 import java.util.*
 
 @Composable
-fun PictureRecognizeScreen() {
+fun PictureRecognizeScreen(
+    viewModel: PictureRecognizeViewModel = viewModel()
+) {
     var language by remember { mutableStateOf("EN") }
     var expanded by remember { mutableStateOf(false) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
@@ -97,6 +100,9 @@ fun PictureRecognizeScreen() {
             tts.shutdown()
         }
     }
+
+    // 觀察 ViewModel 的 UI 狀態
+    val uiState by viewModel.uiState.collectAsState()
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -170,6 +176,8 @@ fun PictureRecognizeScreen() {
                     imageBitmap = null
                     isPlaying = false // 清除圖片時停止播放狀態
                     tts.stop() // 停止 TTS
+                    // 重置 UI 狀態
+                    viewModel.resetUiState()
                 },
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
@@ -197,7 +205,12 @@ fun PictureRecognizeScreen() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Button(
-                        onClick = { /* 觸發 AI 辨識邏輯 */ },
+                        onClick = {
+                            // 觸發圖片識別邏輯
+                            val bitmap = BitmapFactory.decodeStream(context.contentResolver.openInputStream(imageUri!!))
+                            viewModel.recognizeImage(bitmap)
+                        },
+                        enabled = uiState !is UiState.Loading
                     ) {
                         Text(text = stringResources.getString(R.string.recognition_button, language))
                     }
@@ -208,16 +221,21 @@ fun PictureRecognizeScreen() {
                                 tts.stop()
                                 isPlaying = false
                             } else {
+                                val textToSpeak = when (uiState) {
+                                    is UiState.Success -> (uiState as UiState.Success).outputText
+                                    else -> stringResources.getString(R.string.output_sentence, language)
+                                }
                                 val utteranceId = UUID.randomUUID().toString()
                                 tts.speak(
-                                    stringResources.getString(R.string.output_sentence, language),
+                                    textToSpeak,
                                     TextToSpeech.QUEUE_FLUSH,
                                     null,
                                     utteranceId
                                 )
                                 isPlaying = true
                             }
-                        }
+                        },
+                        enabled = uiState is UiState.Success
                     ) {
                         Icon(
                             imageVector = if (isPlaying) Icons.Rounded.Clear else Icons.Filled.PlayArrow,
@@ -226,11 +244,36 @@ fun PictureRecognizeScreen() {
                     }
                 }
 
-                Text(
-                    text = stringResources.getString(R.string.output_sentence, language),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(8.dp)
-                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                when (uiState) {
+                    is UiState.Loading -> {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    }
+                    is UiState.Success -> {
+                        Text(
+                            text = (uiState as UiState.Success).outputText,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
+                    is UiState.Error -> {
+                        Text(
+                            text = (uiState as UiState.Error).errorMessage,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
+                    else -> {
+                        // Initial state or other states
+                        Text(
+                            text = stringResources.getString(R.string.output_sentence, language),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
+                }
             }
         }
     }
