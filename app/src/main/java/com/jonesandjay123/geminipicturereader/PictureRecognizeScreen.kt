@@ -2,6 +2,7 @@ package com.jonesandjay123.geminipicturereader
 
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.speech.tts.TextToSpeech
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -18,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.rounded.Clear
+import java.util.*
 
 @Composable
 fun PictureRecognizeScreen() {
@@ -25,7 +27,7 @@ fun PictureRecognizeScreen() {
     var expanded by remember { mutableStateOf(false) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var imageBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
-    var isPlaying by remember { mutableStateOf(false) } // 控制播放/停止狀態
+    var isPlaying by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val stringResources = StringResources(context)
 
@@ -37,6 +39,32 @@ fun PictureRecognizeScreen() {
             val inputStream = context.contentResolver.openInputStream(it)
             val bitmap = BitmapFactory.decodeStream(inputStream)
             imageBitmap = bitmap?.asImageBitmap()
+        }
+    }
+
+    // 初始化 TTS 引擎
+    val tts = remember {
+        TextToSpeech(context) { status ->
+            if (status != TextToSpeech.SUCCESS) {
+                // 处理初始化失败
+            }
+        }
+    }
+
+    // 切換語言
+    LaunchedEffect(language) {
+        tts.language = when (language) {
+            "EN" -> Locale.ENGLISH
+            "中文" -> Locale.CHINESE
+            else -> Locale.ENGLISH
+        }
+    }
+
+    // 停止 TTS 朗讀
+    DisposableEffect(Unit) {
+        onDispose {
+            tts.stop()
+            tts.shutdown()
         }
     }
 
@@ -111,6 +139,7 @@ fun PictureRecognizeScreen() {
                     imageUri = null
                     imageBitmap = null
                     isPlaying = false // 清除圖片時停止播放狀態
+                    tts.stop() // 停止 TTS
                 },
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
@@ -145,8 +174,17 @@ fun PictureRecognizeScreen() {
 
                     IconButton(
                         onClick = {
-                            isPlaying = !isPlaying // 切換播放狀態
-                            // 未來此處可加入 TTS 播放或停止的邏輯
+                            if (isPlaying) {
+                                tts.stop()
+                            } else {
+                                tts.speak(
+                                    stringResources.getString(R.string.output_sentence, language),
+                                    TextToSpeech.QUEUE_FLUSH,
+                                    null,
+                                    null
+                                )
+                            }
+                            isPlaying = !isPlaying
                         }
                     ) {
                         Icon(
