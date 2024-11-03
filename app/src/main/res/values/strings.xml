@@ -4,6 +4,9 @@
     <string name="image_selection_placeholder">Select Image</string>
     <string name="image_remove_button">Remove</string>
     <string name="select_category">Select Category</string>
+    <string name="copy_success">Copied to clipboard</string>
+    <string name="copy_fail">No content to copy</string>
+    <string name="copy_button_description">Copy Text</string>
     <string name="en">EN</string>
     <string name="zh">中文</string>
 

@@ -1,11 +1,13 @@
 package com.jonesandjay123.geminipicturereader
 
+import android.content.Context
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -13,8 +15,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -281,10 +285,35 @@ fun PictureRecognizeScreen(
                         enabled = uiState is UiState.Success
                     ) {
                         Icon(
-                            imageVector = if (isPlaying) Icons.Rounded.Clear else Icons.Filled.PlayArrow,
+                            imageVector = if (isPlaying) Icons.Rounded.Stop else Icons.Filled.PlayArrow,
                             contentDescription = if (isPlaying) "Stop Audio" else "Play Audio"
                         )
                     }
+
+                    // 複製按鈕
+                    IconButton(
+                        onClick = {
+                            val textToCopy = when (uiState) {
+                                is UiState.Success -> (uiState as UiState.Success).outputText
+                                else -> ""
+                            }
+                            if (textToCopy.isNotEmpty()) {
+                                copyToClipboard(context, textToCopy)
+                                Toast.makeText(context, stringResources.getString(R.string.copy_success, language), Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, stringResources.getString(R.string.copy_fail, language), Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        enabled = uiState is UiState.Success
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = stringResources.getString(R.string.copy_button_description, language)
+                        )
+                    }
+
+
+
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -318,4 +347,12 @@ fun PictureRecognizeScreen(
             }
         }
     }
+}
+
+
+// 複製到剪貼板的函數
+fun copyToClipboard(context: Context, text: String) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+    val clip = android.content.ClipData.newPlainText("Copied Text", text)
+    clipboard.setPrimaryClip(clip)
 }
