@@ -23,8 +23,6 @@ This project is an Android application built with Jetpack Compose that demonstra
 1. Clone this repository:
 
     ```bash
-    bash
-    複製程式碼
     git clone https://github.com/yourusername/gemini-picture-recognition.git
     
     ```
@@ -50,5 +48,3 @@ This project is an Android application built with Jetpack Compose that demonstra
 - **AI Recognition**: Implement AI-powered image recognition using Gemini API or other relevant AI models.
 - **Enhanced TTS**: Expand TTS functionality to handle dynamic text based on image recognition results.
 - **UI Enhancements**: Improve UI and add animations for a smoother user experience.
-
-##
