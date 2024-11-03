@@ -5,6 +5,9 @@ import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.BlockThreshold
+import com.google.ai.client.generativeai.type.HarmCategory
+import com.google.ai.client.generativeai.type.SafetySetting
 import com.google.ai.client.generativeai.type.content
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,9 +19,15 @@ class PictureRecognizeViewModel : ViewModel() {
     private val _uiState: MutableStateFlow<UiState> = MutableStateFlow(UiState.Initial)
     val uiState: StateFlow<UiState> = _uiState
 
+    private val harassmentSafety = SafetySetting(HarmCategory.HARASSMENT, BlockThreshold.NONE)
+    private val hateSpeechSafety = SafetySetting(HarmCategory.HATE_SPEECH, BlockThreshold.NONE)
+    private val sexSpeechSafety =SafetySetting(HarmCategory.SEXUALLY_EXPLICIT, BlockThreshold.NONE)
+    private val dangerousSpeechSafety =SafetySetting(HarmCategory.DANGEROUS_CONTENT, BlockThreshold.NONE)
+
     private val generativeModel = GenerativeModel(
         modelName = "gemini-1.5-flash",
-        apiKey = BuildConfig.apiKey // 確保在 build.gradle 中配置了 apiKey
+        apiKey = BuildConfig.apiKey,
+        safetySettings = listOf(harassmentSafety, hateSpeechSafety, sexSpeechSafety, dangerousSpeechSafety)
     )
 
     fun recognizeImage(bitmap: Bitmap, prompt: String) {

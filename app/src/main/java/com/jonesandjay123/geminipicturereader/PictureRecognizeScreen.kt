@@ -1,4 +1,3 @@
-// PictureRecognizeScreen.kt
 package com.jonesandjay123.geminipicturereader
 
 import android.graphics.BitmapFactory
@@ -11,6 +10,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.rounded.Clear
@@ -48,7 +49,7 @@ fun PictureRecognizeScreen(
         stringArrayResource(id = R.array.category_options_zh).toList()
     }
 
-    // 設定默認類別
+    // 設置默認類別
     LaunchedEffect(language) {
         category = categoryOptions.firstOrNull() ?: ""
     }
@@ -138,13 +139,14 @@ fun PictureRecognizeScreen(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
     ) {
         // 標題和類別及語言選擇下拉選單
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -207,11 +209,12 @@ fun PictureRecognizeScreen(
             }
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
         // 圖片選擇區域
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
                 .height(200.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -227,6 +230,8 @@ fun PictureRecognizeScreen(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         // 移除圖片按鈕（當圖片顯示時才出現）
         if (imageBitmap != null) {
@@ -247,20 +252,20 @@ fun PictureRecognizeScreen(
             }
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
         // 結果顯示區域（當圖片顯示時才顯示）
         if (imageBitmap != null) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
                     .align(Alignment.CenterHorizontally),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
+                        .fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -271,17 +276,17 @@ fun PictureRecognizeScreen(
                                 "EN" -> when (category) {
                                     "Recognition" -> "Describe this image"
                                     "Motivational Story" -> "Generate a motivational story based on this image"
-                                    "Funny Story" -> "Generate a funny story based on this image"
-                                    "Romantic Story" -> "Generate a romantic story based on this image"
+                                    "Joke" -> "Generate a joke based on this image"
+                                    "Love Story" -> "Generate a love story based on this image"
                                     "Horror Story" -> "Generate a horror story based on this image"
                                     else -> "Describe this image"
                                 }
                                 "中文" -> when (category) {
                                     "識別" -> "請用繁體中文描述圖片中的內容"
-                                    "激勵故事" -> "請用繁體中文根據這張圖片生成一個激勵的故事"
-                                    "搞笑故事" -> "請用繁體中文根據這張圖片生成一個搞笑的故事"
-                                    "浪漫故事" -> "請用繁體中文根據這張圖片生成一個浪漫的故事"
-                                    "恐怖故事" -> "請用繁體中文根據這張圖片生成一個恐怖的故事"
+                                    "激勵故事" -> "請根據這張圖片中的元素，發想對應的人、事、物，並以繁體中文講一個激勵、動人的故事"
+                                    "笑話" -> "請根據這張圖片中的元素，發想對應的人、事、物，並以繁體中文講一個笑話"
+                                    "愛情故事" -> "請根據這張圖片中的元素，發想對應的人、事、物，並以繁體中文講一個淒美的愛情故事"
+                                    "恐怖故事" -> "請根據這張圖片中的元素，發想對應的人、事、物，並以繁體中文講一個恐怖故事"
                                     else -> "請用繁體中文描述圖片中的內容"
                                 }
                                 else -> "Describe this image"
@@ -292,7 +297,27 @@ fun PictureRecognizeScreen(
                         },
                         enabled = uiState !is UiState.Loading
                     ) {
-                        Text(text = stringResources.getString(R.string.recognition_button, language))
+                        // 根據語言和類別動態設置按鈕顯示文字
+                        val buttonText = when (language) {
+                            "EN" -> when (category) {
+                                "Recognition" -> "AI Recognition"
+                                "Motivational Story" -> "AI Tell a Motivational Story"
+                                "Joke" -> "AI Tell a Joke"
+                                "Love Story" -> "AI Tell a Love Story"
+                                "Horror Story" -> "AI Tell a Horror Story"
+                                else -> "AI Recognition"
+                            }
+                            "中文" -> when (category) {
+                                "識別" -> "AI識別"
+                                "激勵故事" -> "AI編一個激勵人心的故事"
+                                "笑話" -> "AI編一個笑話"
+                                "愛情故事" -> "AI編一個愛情故事"
+                                "恐怖故事" -> "AI編一個恐怖故事"
+                                else -> "AI識別"
+                            }
+                            else -> "AI Recognition"
+                        }
+                        Text(text = buttonText)
                     }
 
                     IconButton(
@@ -328,23 +353,34 @@ fun PictureRecognizeScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // 結果顯示區域，支持滾動
                 when (uiState) {
                     is UiState.Loading -> {
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
                     }
                     is UiState.Success -> {
-                        Text(
-                            text = (uiState as UiState.Success).outputText,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(8.dp)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 400.dp) // 設置最大高度
+                                .verticalScroll(rememberScrollState()) // 使文本區域可滾動
+                        ) {
+                            Text(
+                                text = (uiState as UiState.Success).outputText,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .padding(8.dp)
+                            )
+                        }
                     }
                     is UiState.Error -> {
                         Text(
                             text = (uiState as UiState.Error).errorMessage,
                             color = MaterialTheme.colorScheme.error,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(8.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp)
                         )
                     }
                     else -> {
@@ -352,7 +388,9 @@ fun PictureRecognizeScreen(
                         Text(
                             text = "",
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(8.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp)
                         )
                     }
                 }
