@@ -247,7 +247,7 @@ fun PictureRecognizeScreen(
                             } else {
                                 val textToSpeak = when (uiState) {
                                     is UiState.Success -> (uiState as UiState.Success).outputText
-                                    else -> stringResources.getString(R.string.output_sentence, language)
+                                    else -> ""
                                 }
                                 val utteranceId = UUID.randomUUID().toString()
                                 tts.speak(
@@ -292,7 +292,7 @@ fun PictureRecognizeScreen(
                     else -> {
                         // Initial state or other states
                         Text(
-                            text = stringResources.getString(R.string.output_sentence, language),
+                            text = "",
                             textAlign = TextAlign.Center,
                             modifier = Modifier.padding(8.dp)
                         )
