@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -31,12 +32,26 @@ fun PictureRecognizeScreen(
     viewModel: PictureRecognizeViewModel = viewModel()
 ) {
     var language by remember { mutableStateOf("EN") }
-    var expanded by remember { mutableStateOf(false) }
+    var languageExpanded by remember { mutableStateOf(false) }
+    var category by remember { mutableStateOf("") }
+    var categoryExpanded by remember { mutableStateOf(false) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var imageBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
     var isPlaying by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val stringResources = StringResources(context)
+
+    // 載入類別選項根據語言
+    val categoryOptions = if (language == "EN") {
+        stringArrayResource(id = R.array.category_options_en).toList()
+    } else {
+        stringArrayResource(id = R.array.category_options_zh).toList()
+    }
+
+    // 設定默認類別
+    LaunchedEffect(language) {
+        category = categoryOptions.firstOrNull() ?: ""
+    }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -125,7 +140,7 @@ fun PictureRecognizeScreen(
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        // 標題和語言選擇下拉選單
+        // 標題和類別及語言選擇下拉選單
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -139,28 +154,55 @@ fun PictureRecognizeScreen(
             )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = { expanded = true }) {
-                    Text(text = stringResources.getString(if (language == "EN") R.string.en else R.string.zh, language))
+                // 類別選擇下拉選單
+                Box {
+                    TextButton(onClick = { categoryExpanded = true }) {
+                        Text(text = if (category.isNotEmpty()) category else "Select Category")
+                    }
+
+                    DropdownMenu(
+                        expanded = categoryExpanded,
+                        onDismissRequest = { categoryExpanded = false }
+                    ) {
+                        categoryOptions.forEach { option ->
+                            DropdownMenuItem(
+                                onClick = {
+                                    category = option
+                                    categoryExpanded = false
+                                },
+                                text = { Text(option) }
+                            )
+                        }
+                    }
                 }
 
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    DropdownMenuItem(
-                        onClick = {
-                            language = "EN"
-                            expanded = false
-                        },
-                        text = { Text(stringResources.getString(R.string.en, language)) }
-                    )
-                    DropdownMenuItem(
-                        onClick = {
-                            language = "中文"
-                            expanded = false
-                        },
-                        text = { Text(stringResources.getString(R.string.zh, language)) }
-                    )
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // 語言選擇下拉選單
+                Box {
+                    TextButton(onClick = { languageExpanded = true }) {
+                        Text(text = stringResources.getString(if (language == "EN") R.string.en else R.string.zh, language))
+                    }
+
+                    DropdownMenu(
+                        expanded = languageExpanded,
+                        onDismissRequest = { languageExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            onClick = {
+                                language = "EN"
+                                languageExpanded = false
+                            },
+                            text = { Text(stringResources.getString(R.string.en, language)) }
+                        )
+                        DropdownMenuItem(
+                            onClick = {
+                                language = "中文"
+                                languageExpanded = false
+                            },
+                            text = { Text(stringResources.getString(R.string.zh, language)) }
+                        )
+                    }
                 }
             }
         }
@@ -224,10 +266,24 @@ fun PictureRecognizeScreen(
                 ) {
                     Button(
                         onClick = {
-                            // 根據語言設置 prompt
+                            // 根據語言和類別設置 prompt
                             val prompt = when (language) {
-                                "EN" -> "Describe this image"
-                                "中文" -> "請用繁體中文描述圖片中的內容"
+                                "EN" -> when (category) {
+                                    "Recognition" -> "Describe this image"
+                                    "Motivational Story" -> "Generate a motivational story based on this image"
+                                    "Funny Story" -> "Generate a funny story based on this image"
+                                    "Romantic Story" -> "Generate a romantic story based on this image"
+                                    "Horror Story" -> "Generate a horror story based on this image"
+                                    else -> "Describe this image"
+                                }
+                                "中文" -> when (category) {
+                                    "識別" -> "請用繁體中文描述圖片中的內容"
+                                    "激勵故事" -> "請用繁體中文根據這張圖片生成一個激勵的故事"
+                                    "搞笑故事" -> "請用繁體中文根據這張圖片生成一個搞笑的故事"
+                                    "浪漫故事" -> "請用繁體中文根據這張圖片生成一個浪漫的故事"
+                                    "恐怖故事" -> "請用繁體中文根據這張圖片生成一個恐怖的故事"
+                                    else -> "請用繁體中文描述圖片中的內容"
+                                }
                                 else -> "Describe this image"
                             }
                             // 觸發圖片識別邏輯
@@ -249,14 +305,16 @@ fun PictureRecognizeScreen(
                                     is UiState.Success -> (uiState as UiState.Success).outputText
                                     else -> ""
                                 }
-                                val utteranceId = UUID.randomUUID().toString()
-                                tts.speak(
-                                    textToSpeak,
-                                    TextToSpeech.QUEUE_FLUSH,
-                                    null,
-                                    utteranceId
-                                )
-                                isPlaying = true
+                                if (textToSpeak.isNotEmpty()) {
+                                    val utteranceId = UUID.randomUUID().toString()
+                                    tts.speak(
+                                        textToSpeak,
+                                        TextToSpeech.QUEUE_FLUSH,
+                                        null,
+                                        utteranceId
+                                    )
+                                    isPlaying = true
+                                }
                             }
                         },
                         enabled = uiState is UiState.Success

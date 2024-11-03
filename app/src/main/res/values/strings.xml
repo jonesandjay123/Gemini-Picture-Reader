@@ -6,4 +6,20 @@
     <string name="recognition_button">AI Recognition</string>
     <string name="en">EN</string>
     <string name="zh">中文</string>
+
+    <string-array name="category_options_en">
+        <item>Recognition</item>
+        <item>Motivational Story</item>
+        <item>Funny Story</item>
+        <item>Romantic Story</item>
+        <item>Horror Story</item>
+    </string-array>
+
+    <string-array name="category_options_zh">
+        <item>識別</item>
+        <item>激勵故事</item>
+        <item>搞笑故事</item>
+        <item>浪漫故事</item>
+        <item>恐怖故事</item>
+    </string-array>
 </resources>
