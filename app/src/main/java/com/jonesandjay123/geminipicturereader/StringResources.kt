@@ -13,9 +13,10 @@ class StringResources(private val context: Context) {
 
     private fun getChineseString(resourceId: Int): String {
         return when (resourceId) {
-            R.string.title -> "圖片識別畫面"
+            R.string.title -> "圖片識別"
             R.string.language_label -> "語言"
-            R.string.image_selection_placeholder -> "圖片選擇佔位符"
+            R.string.image_selection_placeholder -> "選擇圖片"
+            R.string.image_remove_button -> "移除圖片"
             R.string.input_field_placeholder -> "輸入欄位佔位符"
             R.string.button_placeholder -> "按鈕佔位符"
             R.string.result_placeholder -> "結果佔位符"

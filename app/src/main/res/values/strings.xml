@@ -10,9 +10,10 @@
     <string name="results_placeholder">(Results will appear here)</string>
 
 
-    <string name="title">Picture Recognize Screen</string>
+    <string name="title">Picture Recognize</string>
     <string name="language_label">Language</string>
     <string name="image_selection_placeholder">Image Selection Placeholder</string>
+    <string name="image_remove_button">Remove Image</string>
     <string name="input_field_placeholder">Input Field Placeholder</string>
     <string name="button_placeholder">Button Placeholder</string>
     <string name="result_placeholder">Result Placeholder</string>
