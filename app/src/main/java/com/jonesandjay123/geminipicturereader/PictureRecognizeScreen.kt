@@ -2,7 +2,10 @@ package com.jonesandjay123.geminipicturereader
 
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -46,8 +49,35 @@ fun PictureRecognizeScreen() {
     val tts = remember {
         TextToSpeech(context) { status ->
             if (status != TextToSpeech.SUCCESS) {
-                // 处理初始化失败
+                // 處理初始化失敗
             }
+        }
+    }
+
+    // 設定 UtteranceProgressListener
+    DisposableEffect(tts) {
+        val listener = object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {
+                // 可以在這裡處理朗讀開始時的邏輯
+            }
+
+            override fun onDone(utteranceId: String?) {
+                // 確保在主線程更新狀態
+                Handler(Looper.getMainLooper()).post {
+                    isPlaying = false
+                }
+            }
+
+            override fun onError(utteranceId: String?) {
+                // 處理朗讀錯誤
+                Handler(Looper.getMainLooper()).post {
+                    isPlaying = false
+                }
+            }
+        }
+        tts.setOnUtteranceProgressListener(listener)
+        onDispose {
+            tts.setOnUtteranceProgressListener(null)
         }
     }
 
@@ -176,15 +206,17 @@ fun PictureRecognizeScreen() {
                         onClick = {
                             if (isPlaying) {
                                 tts.stop()
+                                isPlaying = false
                             } else {
+                                val utteranceId = UUID.randomUUID().toString()
                                 tts.speak(
                                     stringResources.getString(R.string.output_sentence, language),
                                     TextToSpeech.QUEUE_FLUSH,
                                     null,
-                                    null
+                                    utteranceId
                                 )
+                                isPlaying = true
                             }
-                            isPlaying = !isPlaying
                         }
                     ) {
                         Icon(
