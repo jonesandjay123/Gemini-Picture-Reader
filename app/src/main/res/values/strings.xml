@@ -1,9 +1,9 @@
 <resources>
     <string name="app_name">Gemini Picture Reader</string>
     <string name="title">Picture Recognize</string>
-    <string name="image_selection_placeholder">Image Selection Placeholder</string>
+    <string name="image_selection_placeholder">Select Image</string>
     <string name="image_remove_button">Remove</string>
-    <string name="recognition_button">AI Recognition</string>
+    <string name="select_category">Select Category</string>
     <string name="en">EN</string>
     <string name="zh">中文</string>
 

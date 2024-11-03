@@ -19,10 +19,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -32,21 +30,20 @@ import java.util.*
 fun PictureRecognizeScreen(
     viewModel: PictureRecognizeViewModel = viewModel()
 ) {
-    var language by remember { mutableStateOf("EN") }
+    var language by remember { mutableStateOf("中文") } // 預設語言改為中文
     var languageExpanded by remember { mutableStateOf(false) }
     var category by remember { mutableStateOf("") }
     var categoryExpanded by remember { mutableStateOf(false) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
-    var imageBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
     var isPlaying by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val stringResources = StringResources(context)
 
-    // 載入類別選項根據語言
+    // 根據語言載入類別選項
     val categoryOptions = if (language == "EN") {
-        stringArrayResource(id = R.array.category_options_en).toList()
+        context.resources.getStringArray(R.array.category_options_en).toList()
     } else {
-        stringArrayResource(id = R.array.category_options_zh).toList()
+        context.resources.getStringArray(R.array.category_options_zh).toList()
     }
 
     // 設置默認類別
@@ -59,10 +56,6 @@ fun PictureRecognizeScreen(
     ) { uri: Uri? ->
         uri?.let {
             imageUri = it
-            val inputStream = context.contentResolver.openInputStream(it)
-            val bitmap = BitmapFactory.decodeStream(inputStream)
-            imageBitmap = bitmap?.asImageBitmap()
-            // 重置 UI 狀態當選擇新圖片
             viewModel.resetUiState()
         }
     }
@@ -79,19 +72,15 @@ fun PictureRecognizeScreen(
     // 設定 UtteranceProgressListener
     DisposableEffect(tts) {
         val listener = object : UtteranceProgressListener() {
-            override fun onStart(utteranceId: String?) {
-                // 可以在這裡處理朗讀開始時的邏輯
-            }
+            override fun onStart(utteranceId: String?) {}
 
             override fun onDone(utteranceId: String?) {
-                // 確保在主線程更新狀態
                 Handler(Looper.getMainLooper()).post {
                     isPlaying = false
                 }
             }
 
             override fun onError(utteranceId: String?) {
-                // 處理朗讀錯誤
                 Handler(Looper.getMainLooper()).post {
                     isPlaying = false
                 }
@@ -99,31 +88,24 @@ fun PictureRecognizeScreen(
         }
         tts.setOnUtteranceProgressListener(listener)
         onDispose {
-            tts.setOnUtteranceProgressListener(null)
+            tts.stop()
+            tts.shutdown()
         }
     }
 
-    // 切換語言
+    // 根據選擇的語言設置 TTS 語言
     LaunchedEffect(language) {
         tts.language = when (language) {
             "EN" -> Locale.ENGLISH
-            "中文" -> Locale.TRADITIONAL_CHINESE // 使用繁體中文
-            else -> Locale.ENGLISH
-        }
-    }
-
-    // 停止 TTS 朗讀
-    DisposableEffect(Unit) {
-        onDispose {
-            tts.stop()
-            tts.shutdown()
+            "中文" -> Locale.TRADITIONAL_CHINESE
+            else -> Locale.TRADITIONAL_CHINESE
         }
     }
 
     // 觀察 ViewModel 的 UI 狀態
     val uiState by viewModel.uiState.collectAsState()
 
-    // 自動觸發 TTS 播放當 uiState 為 Success
+    // 自動播放 TTS
     LaunchedEffect(uiState) {
         if (uiState is UiState.Success && !isPlaying) {
             val textToSpeak = (uiState as UiState.Success).outputText
@@ -143,10 +125,9 @@ fun PictureRecognizeScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // 標題和類別及語言選擇下拉選單
+        // 標題和選單
         Row(
-            modifier = Modifier
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -156,10 +137,10 @@ fun PictureRecognizeScreen(
             )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // 類別選擇下拉選單
+                // 類別選擇
                 Box {
                     TextButton(onClick = { categoryExpanded = true }) {
-                        Text(text = if (category.isNotEmpty()) category else "Select Category")
+                        Text(text = if (category.isNotEmpty()) category else stringResources.getString(R.string.select_category, language))
                     }
 
                     DropdownMenu(
@@ -180,30 +161,25 @@ fun PictureRecognizeScreen(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // 語言選擇下拉選單
+                // 語言選擇
                 Box {
                     TextButton(onClick = { languageExpanded = true }) {
-                        Text(text = stringResources.getString(if (language == "EN") R.string.en else R.string.zh, language))
+                        Text(text = language)
                     }
 
                     DropdownMenu(
                         expanded = languageExpanded,
                         onDismissRequest = { languageExpanded = false }
                     ) {
-                        DropdownMenuItem(
-                            onClick = {
-                                language = "EN"
-                                languageExpanded = false
-                            },
-                            text = { Text(stringResources.getString(R.string.en, language)) }
-                        )
-                        DropdownMenuItem(
-                            onClick = {
-                                language = "中文"
-                                languageExpanded = false
-                            },
-                            text = { Text(stringResources.getString(R.string.zh, language)) }
-                        )
+                        listOf("中文", "EN").forEach { lang ->
+                            DropdownMenuItem(
+                                onClick = {
+                                    language = lang
+                                    languageExpanded = false
+                                },
+                                text = { Text(lang) }
+                            )
+                        }
                     }
                 }
             }
@@ -218,12 +194,18 @@ fun PictureRecognizeScreen(
                 .height(200.dp),
             contentAlignment = Alignment.Center
         ) {
-            if (imageBitmap != null) {
-                Image(
-                    bitmap = imageBitmap!!,
-                    contentDescription = stringResources.getString(R.string.image_selection_placeholder, language),
-                    modifier = Modifier.fillMaxSize()
-                )
+            if (imageUri != null) {
+                val bitmap = remember(imageUri) {
+                    val inputStream = context.contentResolver.openInputStream(imageUri!!)
+                    BitmapFactory.decodeStream(inputStream)?.asImageBitmap()
+                }
+                bitmap?.let {
+                    Image(
+                        bitmap = it,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             } else {
                 Button(onClick = { launcher.launch("image/*") }) {
                     Text(text = stringResources.getString(R.string.image_selection_placeholder, language))
@@ -233,15 +215,13 @@ fun PictureRecognizeScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // 移除圖片按鈕（當圖片顯示時才出現）
-        if (imageBitmap != null) {
+        // 移除圖片按鈕
+        if (imageUri != null) {
             Button(
                 onClick = {
                     imageUri = null
-                    imageBitmap = null
-                    isPlaying = false // 清除圖片時停止播放狀態
-                    tts.stop() // 停止 TTS
-                    // 重置 UI 狀態
+                    isPlaying = false
+                    tts.stop()
                     viewModel.resetUiState()
                 },
                 modifier = Modifier
@@ -254,70 +234,26 @@ fun PictureRecognizeScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 結果顯示區域（當圖片顯示時才顯示）
-        if (imageBitmap != null) {
+        // 結果顯示區域
+        if (imageUri != null) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.CenterHorizontally),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Button(
                         onClick = {
-                            // 根據語言和類別設置 prompt
-                            val prompt = when (language) {
-                                "EN" -> when (category) {
-                                    "Recognition" -> "Describe this image"
-                                    "Motivational Story" -> "Generate a motivational story based on this image"
-                                    "Joke" -> "Generate a joke based on this image"
-                                    "Love Story" -> "Generate a love story based on this image"
-                                    "Horror Story" -> "Generate a horror story based on this image"
-                                    else -> "Describe this image"
-                                }
-                                "中文" -> when (category) {
-                                    "識別" -> "請用繁體中文描述圖片中的內容"
-                                    "激勵故事" -> "請根據這張圖片中的元素，發想對應的人、事、物，並以繁體中文講一個激勵、動人的故事"
-                                    "笑話" -> "請根據這張圖片中的元素，發想對應的人、事、物，並以繁體中文講一個笑話"
-                                    "愛情故事" -> "請根據這張圖片中的元素，發想對應的人、事、物，並以繁體中文講一個淒美的愛情故事"
-                                    "恐怖故事" -> "請根據這張圖片中的元素，發想對應的人、事、物，並以繁體中文講一個恐怖故事"
-                                    else -> "請用繁體中文描述圖片中的內容"
-                                }
-                                else -> "Describe this image"
-                            }
-                            // 觸發圖片識別邏輯
+                            val prompt = viewModel.getPrompt(language, category)
                             val bitmap = BitmapFactory.decodeStream(context.contentResolver.openInputStream(imageUri!!))
                             viewModel.recognizeImage(bitmap, prompt)
                         },
                         enabled = uiState !is UiState.Loading
                     ) {
-                        // 根據語言和類別動態設置按鈕顯示文字
-                        val buttonText = when (language) {
-                            "EN" -> when (category) {
-                                "Recognition" -> "AI Recognition"
-                                "Motivational Story" -> "AI Tell a Motivational Story"
-                                "Joke" -> "AI Tell a Joke"
-                                "Love Story" -> "AI Tell a Love Story"
-                                "Horror Story" -> "AI Tell a Horror Story"
-                                else -> "AI Recognition"
-                            }
-                            "中文" -> when (category) {
-                                "識別" -> "AI識別"
-                                "激勵故事" -> "AI編一個激勵人心的故事"
-                                "笑話" -> "AI編一個笑話"
-                                "愛情故事" -> "AI編一個愛情故事"
-                                "恐怖故事" -> "AI編一個恐怖故事"
-                                else -> "AI識別"
-                            }
-                            else -> "AI Recognition"
-                        }
-                        Text(text = buttonText)
+                        Text(text = viewModel.getButtonText(language, category))
                     }
 
                     IconButton(
@@ -353,25 +289,19 @@ fun PictureRecognizeScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 結果顯示區域，支持滾動
+                // 顯示結果
                 when (uiState) {
                     is UiState.Loading -> {
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                        CircularProgressIndicator()
                     }
                     is UiState.Success -> {
-                        Box(
+                        Text(
+                            text = (uiState as UiState.Success).outputText,
+                            textAlign = TextAlign.Center,
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 400.dp) // 設置最大高度
-                                .verticalScroll(rememberScrollState()) // 使文本區域可滾動
-                        ) {
-                            Text(
-                                text = (uiState as UiState.Success).outputText,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .padding(8.dp)
-                            )
-                        }
+                                .padding(8.dp)
+                                .verticalScroll(rememberScrollState())
+                        )
                     }
                     is UiState.Error -> {
                         Text(
@@ -383,16 +313,7 @@ fun PictureRecognizeScreen(
                                 .padding(8.dp)
                         )
                     }
-                    else -> {
-                        // Initial state or other states
-                        Text(
-                            text = "",
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp)
-                        )
-                    }
+                    else -> {}
                 }
             }
         }
